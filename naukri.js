@@ -41,13 +41,13 @@ async function isLoggedIn(options = {}) {
     await page.waitForTimeout(3000);
 
     const url = page.url();
-    if (url.includes('nlogin') || url.includes('login')) {
+    if (url.includes('nlogin') || (url.includes('login') && !url.includes('naukrigulf.com/'))) {
       await context.close();
       return false;
     }
-    // Check for profile element
-    const profileHeader = await page.$('.profile-head, .supp-head, .title, .name-wrapper, .lazy-render, .resumeHeadline, .profileSummary, div[class*="profile"]');
-    const loggedIn = !!profileHeader;
+    // Check for profile element or general logged-in page structure
+    const profileHeader = await page.$('.profile-head, .supp-head, .title, .name-wrapper, .lazy-render, .resumeHeadline, .profileSummary, div[class*="profile"], header, nav');
+    const loggedIn = !!profileHeader || !url.includes('login');
     await context.close();
     return loggedIn;
   } catch (err) {
@@ -66,6 +66,15 @@ async function setupLogin(options = {}) {
 
   await page.goto(config.NAUKRI_LOGIN_URL, { waitUntil: 'domcontentloaded' });
 
+  // Click login button/link to trigger popup if needed
+  try {
+    const loginTrigger = await page.locator('#login_Layer, a:has-text("Login"), button:has-text("Login")').first();
+    if (await loginTrigger.count() > 0) {
+      await loginTrigger.click();
+      await page.waitForTimeout(1000);
+    }
+  } catch (e) {}
+
   // Auto-fill if credentials provided
   if (config.EMAIL && config.PASSWORD) {
     try {
@@ -83,9 +92,12 @@ async function setupLogin(options = {}) {
 
   console.log('Waiting for successful login to Naukri profile page...');
   
-  // Wait until navigated to profile or user dashboard
+  // Wait until navigated to profile, dashboard, or main domain logged in state
   try {
-    await page.waitForURL((url) => url.toString().includes('/mnjuser/profile') || url.toString().includes('/mnjuser/homepage'), { timeout: 180000 });
+    await page.waitForURL((url) => {
+      const u = url.toString();
+      return u.includes('/mnjuser/profile') || u.includes('/mnjuser/homepage') || u.includes('naukrigulf.com/') && !u.includes('login');
+    }, { timeout: 180000 });
     console.log('Successfully logged in! Session saved to:', config.USER_DATA_DIR);
   } catch (err) {
     console.log('Login timeout or window closed before completing profile navigation.');
@@ -151,35 +163,36 @@ async function refreshProfile(options = {}) {
     let refreshed = false;
     let detailMsg = '';
 
-    // Method: Click Resume headline edit icon specifically
-    console.log('Attempting to update Resume Headline...');
+    // Method: Generic click on edit button or heading on Naukri Gulf profile
+    console.log('Attempting to update profile on Naukri Gulf...');
     try {
-      const headlineEditBtn = await page.locator('.card:has-text("Resume headline") .edit').first();
-      if (await headlineEditBtn.count() > 0) {
-        await headlineEditBtn.click();
-        await page.waitForTimeout(1500);
+      await page.waitForTimeout(2000);
+      // Try to click edit icon or text on Naukri Gulf profile
+      const editTrigger = await page.locator('span:has-text("Edit"), a:has-text("Edit"), .icon-edit, [class*="edit"]').first();
+      if (await editTrigger.count() > 0) {
+        await editTrigger.click();
+        await page.waitForTimeout(2000);
 
-        const textarea = await page.waitForSelector('textarea#resumeHeadlineTxt, textarea', { timeout: 5000 });
-        if (textarea) {
+        const textarea = await page.locator('textarea, input[type="text"]').first();
+        if (await textarea.count() > 0) {
           let text = await textarea.inputValue();
-          text = text.trim();
+          text = (text || '').trim();
           let newText = text.endsWith('.') ? text.slice(0, -1) : text + '.';
           await textarea.fill(newText);
           await page.waitForTimeout(500);
 
-          // Find save button specifically inside the open lightbox or form
-          const saveBtn = await page.locator('.lightbox button:has-text("Save"), .lightbox .btn-dark-ot, button[id*="save"], button[id*="submit"]').last();
+          const saveBtn = await page.locator('button:has-text("Save"), input[value="Save"], .btn-dark-ot').last();
           if (await saveBtn.count() > 0) {
             await saveBtn.click();
             await page.waitForTimeout(2000);
             refreshed = true;
-            detailMsg = 'Resume Headline updated and saved successfully!';
+            detailMsg = 'Naukri Gulf profile updated and saved successfully!';
             console.log(`SUCCESS: ${detailMsg}`);
           }
         }
       }
     } catch (err) {
-      console.log('Resume Headline edit click failed:', err.message);
+      console.log('Naukri Gulf edit trigger failed:', err.message);
     }
 
     // Check last updated text on profile header

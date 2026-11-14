@@ -8,7 +8,11 @@
     "login": "node index.js login",
     "refresh": "node index.js refresh",
     "schedule": "node index.js schedule",
-    "status": "node index.js status"
+    "status": "node index.js status",
+    "gulf:login": "node index-gulf.js login",
+    "gulf:refresh": "node index-gulf.js refresh",
+    "gulf:schedule": "node index-gulf.js schedule",
+    "gulf:status": "node index-gulf.js status"
   },
   "keywords": [],
   "author": "",

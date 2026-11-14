@@ -104,9 +104,13 @@ async function refreshProfile(options = {}) {
         if (await textarea.count() > 0) {
           let text = await textarea.inputValue();
           text = (text || '').trim();
+          let actionType = text.endsWith('.') ? 'REMOVED period (.)' : 'ADDED period (.)';
           let newText = text.endsWith('.') ? text.slice(0, -1) : text + '.';
           await textarea.fill(newText);
-          console.log(`Updated CV headline text to: "${newText}"`);
+          console.log(`\n========================================`);
+          console.log(`✨ REFRESH ACTION PERFORMED: ${actionType}`);
+          console.log(`📝 Updated CV Headline: "${newText}"`);
+          console.log(`========================================\n`);
           await page.waitForTimeout(500);
 
           const saveBtn = await page.locator('button:has-text("Save"), input[value="Save"], .btn-dark-ot, button[type="submit"]').last();

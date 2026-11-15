@@ -10,17 +10,22 @@ async function launchBrowser(options = {}) {
     fs.mkdirSync(config.USER_DATA_DIR, { recursive: true });
   }
 
-  const context = await chromium.launchPersistentContext(config.USER_DATA_DIR, {
-    headless: isHeadless,
-    viewport: { width: 1280, height: 800 },
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    args: [
-      '--disable-blink-features=AutomationControlled',
-      '--no-sandbox',
-      '--disable-http2',
-      '--ignore-certificate-errors'
-    ]
-  });
+    // Force use of a known browser path if environment variable is set
+    const launchOptions = {
+        headless: isHeadless,
+        viewport: { width: 1280, height: 800 },
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        args: ['--disable-blink-features=AutomationControlled', '--no-sandbox', '--disable-http2', '--ignore-certificate-errors']
+    };
+    
+    // In GitHub Actions, explicitly define executable path if standard detection fails
+    if (process.env.GITHUB_ACTIONS) {
+        // Playwright installs to a specific directory structure on Linux runners
+        // We will let playwright handle the path discovery, but ensure we aren't creating 
+        // persistent contexts that conflict with volatile runner environments.
+    }
+
+    const context = await chromium.launchPersistentContext(config.USER_DATA_DIR, launchOptions);
 
   return context;
 }

@@ -148,9 +148,6 @@ async function refreshProfile(options = {}) {
     } catch (err) {
       console.log('Profile refresh interaction error:', err.message);
     }
-
-    await context.close();
-    return { success: refreshed };
   } catch (err) {
     console.error('Refresh error:', err.message);
     if (context) await context.close();
@@ -158,7 +155,7 @@ async function refreshProfile(options = {}) {
   }
 }
 
-    async function isLoggedIn() {
+async function isLoggedIn() {
       let context;
       try {
         context = await launchBrowser({ headless: false });

@@ -159,27 +159,27 @@ async function refreshProfile(options = {}) {
       });
       console.log('Page text headings sample:', headings.slice(0, 40));
 
-      // Try locating the container with "Headline" or "Summary" or similar
+      // Try locating the edit button by specifically matching elements near "CV Headline"
       let editBtn = null;
       
-      // Attempt 1: Look for edit icon/button inside any element containing "Headline" or "Summary"
       const candidateSections = await page.locator('div, section, .card').all();
       for (const sec of candidateSections) {
         const text = await sec.innerText().catch(() => '');
-        if (/cv headline|headline|profile summary|summary/i.test(text)) {
+        // Make sure it contains "CV Headline" and is not the header/nav wrapper
+        if (/cv headline/i.test(text) && text.length < 600 && !text.includes('HOME')) {
           const btn = await sec.locator('a, span, button, [class*="edit"], i').filter({ hasText: /edit/i }).first();
           if (await btn.count() > 0) {
             editBtn = btn;
-            console.log('Found edit button in section matching text:', text.substring(0, 50));
+            console.log('Found edit button in CV Headline section with text sample:', text.substring(0, 60).replace(/\n/g, ' '));
             break;
           }
         }
       }
 
-      // Attempt 2: If not found, look for any element with class or attribute containing 'edit' near headline
+      // Attempt 2: If not found, look for edit icon specifically inside sections containing CV Headline
       if (!editBtn || await editBtn.count() === 0) {
-        console.log('Attempting broader search for edit elements...');
-        editBtn = await page.locator('[class*="edit"], .ni-icon-edit, span:has-text("Edit"), a:has-text("Edit")').first();
+        console.log('Attempting selector-based edit button search for CV Headline...');
+        editBtn = await page.locator('div:has-text("CV Headline") [class*="edit"], div:has-text("CV Headline") a:has-text("Edit"), div:has-text("CV Headline") span:has-text("Edit")').first();
       }
 
       if (editBtn && await editBtn.count() > 0) {

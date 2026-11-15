@@ -100,9 +100,6 @@ async function refreshProfile(options = {}) {
 
     let refreshed = false;
     try {
-      // Target the CV headline section more flexibly
-    let refreshed = false;
-    try {
       console.log('Searching for CV Headline container...');
       const cvSection = await page.locator('div, section').filter({ hasText: /CV headline/i }).first();
       
@@ -144,6 +141,9 @@ async function refreshProfile(options = {}) {
     } catch (err) {
       console.log('Profile refresh interaction error:', err.message);
     }
+
+    if (context) await context.close();
+    return { success: refreshed };
   } catch (err) {
     console.error('Refresh error:', err.message);
     if (context) await context.close();

@@ -143,38 +143,14 @@ async function refreshProfile(options = {}) {
     try {
       console.log('Searching for CV Headline / Summary container...');
       
-      // Let's scroll down to load lazy sections
+      // Scroll to load lazy sections
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight / 2));
-      await page.waitForTimeout(2000);
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       await page.waitForTimeout(2000);
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.waitForTimeout(1000);
 
-      // Find all sections or card headings on the page
-      const headings = await page.evaluate(() => {
-        return Array.from(document.querySelectorAll('h1, h2, h3, h4, span, div'))
-          .map(el => el.innerText.trim())
-          .filter(t => t.length > 2 && t.length < 80);
-      });
-      console.log('Page text headings sample:', headings.slice(0, 40));
-
       // Try locating the edit button by specifically matching elements near "CV Headline"
       let editBtn = null;
-      
-      const candidateSections = await page.locator('div, section, .card').all();
-      for (const sec of candidateSections) {
-        const text = await sec.innerText().catch(() => '');
-        // Make sure it contains "CV Headline" and is not the header/nav wrapper
-        if (/cv headline/i.test(text) && text.length < 600 && !text.includes('HOME')) {
-          const btn = await sec.locator('a, span, button, [class*="edit"], i').filter({ hasText: /edit/i }).first();
-          if (await btn.count() > 0) {
-            editBtn = btn;
-            console.log('Found edit button in CV Headline section with text sample:', text.substring(0, 60).replace(/\n/g, ' '));
-            break;
-          }
-        }
-      }
 
       // Attempt 2: If not found, look for edit icon specifically inside sections containing CV Headline
       if (!editBtn || await editBtn.count() === 0) {

@@ -143,61 +143,68 @@ async function refreshProfile(options = {}) {
     try {
       console.log('Searching for CV Headline container...');
       
+      // Dump all headings/cards on the profile page to identify correct selectors
+      const cardTexts = await page.evaluate(() => {
+        const els = Array.from(document.querySelectorAll('div, section, span, h2, h3'));
+        return els.map(e => e.innerText.trim()).filter(t => t.length > 0 && t.length < 100);
+      });
+      console.log('Sample text elements on profile page:', cardTexts.slice(0, 30));
+
       // Try multiple possible selectors or text patterns for CV headline/summary section
-      const cvSection = await page.locator('div, section, .card').filter({ hasText: /CV headline|Headline|Summary/i }).first();
+      const cvSection = await page.locator('div, section, .card, [class*="section"]').filter({ hasText: /CV headline|Headline|Summary|Profile Summary/i }).first();
       
       // Log HTML of the container found (if any) to help debug
       const sectionHtml = await cvSection.evaluate(el => el.innerHTML).catch(() => 'Section not found');
-      console.log('Found CV section HTML sample:', sectionHtml.substring(0, 200));
+      console.log('Found CV section HTML sample:', sectionHtml.substring(0, 300));
 
-      let editBtn = await cvSection.locator('span:has-text("Edit"), a:has-text("Edit"), .edit, button, [class*="edit"]').first();
+      let editBtn = await cvSection.locator('span:has-text("Edit"), a:has-text("Edit"), .edit, button, [class*="edit"], i').first();
 
       if (await editBtn.count() > 0) {
         await editBtn.click();
         console.log('Clicked CV Headline edit button.');
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(3000);
 
-        const textarea = await page.locator('textarea').first();
+        const textarea = await page.locator('textarea, [contenteditable="true"]').first();
         if (await textarea.count() > 0) {
-          let text = await textarea.inputValue();
+          let text = await textarea.inputValue().catch(() => textarea.innerText());
           text = (text || '').trim();
           let actionType = text.endsWith('.') ? 'REMOVED period (.)' : 'ADDED period (.)';
           let newText = text.endsWith('.') ? text.slice(0, -1) : text + '.';
-          await textarea.fill(newText);
+          await textarea.fill ? await textarea.fill(newText) : await textarea.type(newText);
           console.log(`\n========================================`);
           console.log(`✨ REFRESH ACTION PERFORMED: ${actionType}`);
           console.log(`📝 Updated CV Headline: "${newText}"`);
           console.log(`========================================\n`);
-          await page.waitForTimeout(500);
+          await page.waitForTimeout(1000);
 
-          const saveBtn = await page.locator('button:has-text("Save"), input[value="Save"], .btn-dark-ot, button[type="submit"]').last();
+          const saveBtn = await page.locator('button:has-text("Save"), input[value="Save"], .btn-dark-ot, button[type="submit"], a:has-text("Save")').last();
           if (await saveBtn.count() > 0) {
             await saveBtn.click();
-            await page.waitForTimeout(2000);
+            await page.waitForTimeout(3000);
             refreshed = true;
             console.log('SUCCESS: Naukri Gulf CV Headline updated and saved successfully!');
           }
         }
       } else {
         console.log('WARNING: Could not find "Edit" button inside the CV Headline section. Trying fallback global edit button or selectors...');
-        // Fallback: try finding any edit button near CV headline text
-        const fallbackEdit = await page.locator('a, span, button').filter({ hasText: /Edit/i }).first();
-        if (await fallbackEdit.count() > 0) {
-          await fallbackEdit.click();
-          console.log('Clicked fallback edit button.');
-          await page.waitForTimeout(2000);
-          const textarea = await page.locator('textarea').first();
+        // Fallback: try finding any edit button on the page
+        const allEditBtns = await page.locator('a:has-text("Edit"), span:has-text("Edit"), button:has-text("Edit"), [class*="edit"]').all();
+        console.log(`Found ${allEditBtns.length} edit buttons on page. Clicking the first one...`);
+        if (allEditBtns.length > 0) {
+          await allEditBtns[0].click();
+          await page.waitForTimeout(3000);
+          const textarea = await page.locator('textarea, [contenteditable="true"]').first();
           if (await textarea.count() > 0) {
-            let text = await textarea.inputValue();
+            let text = await textarea.inputValue().catch(() => textarea.innerText());
             text = (text || '').trim();
             let newText = text.endsWith('.') ? text.slice(0, -1) : text + '.';
-            await textarea.fill(newText);
-            const saveBtn = await page.locator('button:has-text("Save"), input[value="Save"], button[type="submit"]').last();
+            await textarea.fill ? await textarea.fill(newText) : await textarea.type(newText);
+            const saveBtn = await page.locator('button:has-text("Save"), input[value="Save"], button[type="submit"], a:has-text("Save")').last();
             if (await saveBtn.count() > 0) {
               await saveBtn.click();
-              await page.waitForTimeout(2000);
+              await page.waitForTimeout(3000);
               refreshed = true;
-              console.log('SUCCESS: Naukri Gulf updated via fallback!');
+              console.log('SUCCESS: Naukri Gulf updated via fallback edit button!');
             }
           }
         }

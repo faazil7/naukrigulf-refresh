@@ -98,17 +98,45 @@ async function refreshProfile(options = {}) {
     await page.goto(config.GULF_PROFILE_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.waitForTimeout(6000);
 
-    // Take screenshot and dump HTML for debugging why CV section isn't found
-    try {
-      const currentUrl = page.url();
-      console.log('Current URL after navigation:', currentUrl);
-      const title = await page.title();
-      console.log('Page Title:', title);
-      const htmlSnippet = await page.content();
-      console.log('Page HTML length:', htmlSnippet.length);
-      console.log('Page HTML snippet:', htmlSnippet.substring(0, 500));
-    } catch (debugErr) {
-      console.log('Debug dump error:', debugErr.message);
+    let currentUrl = page.url();
+    console.log('Current URL after navigation:', currentUrl);
+
+    // If redirected to login, try automated login if credentials are provided
+    if (currentUrl.includes('login') || currentUrl.includes('nlogin')) {
+      console.log('Detected login redirect. Attempting automated login using stored credentials...');
+      if (config.EMAIL && config.PASSWORD) {
+        try {
+          // On Naukri Gulf, login fields might be on the login page directly or in a form
+          // Let's wait for username input directly
+          console.log('Waiting for email input field...');
+          const emailInput = await page.waitForSelector('input[type="text"], input[type="email"], input[id*="username"], input[placeholder*="Email"]', { timeout: 10000 });
+          await emailInput.fill(config.EMAIL);
+          console.log('Entered email.');
+
+          console.log('Waiting for password input field...');
+          const passInput = await page.waitForSelector('input[type="password"]', { timeout: 10000 });
+          await passInput.fill(config.PASSWORD);
+          console.log('Entered password.');
+          
+          const submitBtn = await page.locator('button[type="submit"], input[value="Login"], button:has-text("Login")').first();
+          if (await submitBtn.count() > 0) {
+            await submitBtn.click();
+            console.log('Submitted login credentials. Waiting for navigation/login completion...');
+            await page.waitForTimeout(8000);
+          }
+        } catch (loginErr) {
+          console.log('Automated login attempt failed or requires manual intervention:', loginErr.message);
+        }
+      } else {
+        console.log('WARNING: No NAUKRI_EMAIL and NAUKRI_PASSWORD provided in environment/config for auto-login.');
+      }
+
+      // Navigate back to profile URL after login attempt
+      console.log('Navigating again to profile URL after login attempt...');
+      await page.goto(config.GULF_PROFILE_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      await page.waitForTimeout(6000);
+      currentUrl = page.url();
+      console.log('Current URL after re-navigation:', currentUrl);
     }
 
     let refreshed = false;

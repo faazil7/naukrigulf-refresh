@@ -100,10 +100,15 @@ async function refreshProfile(options = {}) {
 
     let refreshed = false;
     try {
-      console.log('Looking for CV Headline section specifically...');
-      // Target the exact section header or container for CV Headline
-      const cvSection = await page.locator('div:has-text("CV headline"), section:has-text("CV headline")').last();
-      let editBtn = await cvSection.locator('span:has-text("Edit"), a:has-text("Edit"), .edit, [class*="edit"]').first();
+      // Target the CV headline section more flexibly
+      console.log('Searching for CV Headline container...');
+      const cvSection = await page.locator('div:has-text("CV headline"), section:has-text("CV headline"), [class*="CVHead"], [id*="cvHeadline"]').first();
+      
+      // Log HTML of the container found (if any) to help debug
+      const sectionHtml = await cvSection.evaluate(el => el.innerHTML).catch(() => 'Section not found');
+      console.log('Found CV section HTML sample:', sectionHtml.substring(0, 200));
+
+      let editBtn = await cvSection.locator('span:has-text("Edit"), a:has-text("Edit"), .edit, [class*="edit"], button').first();
 
       if (await editBtn.count() > 0) {
         await editBtn.click();

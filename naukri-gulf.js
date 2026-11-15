@@ -95,19 +95,34 @@ async function refreshProfile(options = {}) {
     const page = context.pages()[0] || await context.newPage();
 
     console.log('Navigating directly to Naukri Gulf Profile page...');
-    await page.goto(config.GULF_PROFILE_URL, { waitUntil: 'commit', timeout: 45000 });
+    await page.goto(config.GULF_PROFILE_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.waitForTimeout(6000);
+
+    // Take screenshot and dump HTML for debugging why CV section isn't found
+    try {
+      const currentUrl = page.url();
+      console.log('Current URL after navigation:', currentUrl);
+      const title = await page.title();
+      console.log('Page Title:', title);
+      const htmlSnippet = await page.content();
+      console.log('Page HTML length:', htmlSnippet.length);
+      console.log('Page HTML snippet:', htmlSnippet.substring(0, 500));
+    } catch (debugErr) {
+      console.log('Debug dump error:', debugErr.message);
+    }
 
     let refreshed = false;
     try {
       console.log('Searching for CV Headline container...');
-      const cvSection = await page.locator('div, section').filter({ hasText: /CV headline/i }).first();
+      
+      // Try multiple possible selectors or text patterns for CV headline/summary section
+      const cvSection = await page.locator('div, section, .card').filter({ hasText: /CV headline|Headline|Summary/i }).first();
       
       // Log HTML of the container found (if any) to help debug
       const sectionHtml = await cvSection.evaluate(el => el.innerHTML).catch(() => 'Section not found');
       console.log('Found CV section HTML sample:', sectionHtml.substring(0, 200));
 
-      let editBtn = await cvSection.locator('span:has-text("Edit"), a:has-text("Edit"), .edit, button').first();
+      let editBtn = await cvSection.locator('span:has-text("Edit"), a:has-text("Edit"), .edit, button, [class*="edit"]').first();
 
       if (await editBtn.count() > 0) {
         await editBtn.click();
@@ -136,7 +151,28 @@ async function refreshProfile(options = {}) {
           }
         }
       } else {
-        console.log('WARNING: Could not find "Edit" button inside the CV Headline section.');
+        console.log('WARNING: Could not find "Edit" button inside the CV Headline section. Trying fallback global edit button or selectors...');
+        // Fallback: try finding any edit button near CV headline text
+        const fallbackEdit = await page.locator('a, span, button').filter({ hasText: /Edit/i }).first();
+        if (await fallbackEdit.count() > 0) {
+          await fallbackEdit.click();
+          console.log('Clicked fallback edit button.');
+          await page.waitForTimeout(2000);
+          const textarea = await page.locator('textarea').first();
+          if (await textarea.count() > 0) {
+            let text = await textarea.inputValue();
+            text = (text || '').trim();
+            let newText = text.endsWith('.') ? text.slice(0, -1) : text + '.';
+            await textarea.fill(newText);
+            const saveBtn = await page.locator('button:has-text("Save"), input[value="Save"], button[type="submit"]').last();
+            if (await saveBtn.count() > 0) {
+              await saveBtn.click();
+              await page.waitForTimeout(2000);
+              refreshed = true;
+              console.log('SUCCESS: Naukri Gulf updated via fallback!');
+            }
+          }
+        }
       }
     } catch (err) {
       console.log('Profile refresh interaction error:', err.message);

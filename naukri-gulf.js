@@ -21,9 +21,13 @@ async function launchBrowser(options = {}) {
     
     // In GitHub Actions, explicitly define executable path if standard detection fails
     if (process.env.GITHUB_ACTIONS) {
-        // Playwright installs to a specific directory structure on Linux runners
-        // We will let playwright handle the path discovery, but ensure we aren't creating 
-        // persistent contexts that conflict with volatile runner environments.
+        // Based on logs, the browser is at: /home/runner/.cache/ms-playwright/chromium-1255/chrome-linux64/chrome
+        // The previous error showed a path that looked like /chrome-linux/chrome
+        // Let's use a dynamic search to find the correct path
+        const baseDir = '/home/runner/.cache/ms-playwright/chromium-1255/chrome-linux64/';
+        if (fs.existsSync(baseDir + 'chrome')) {
+            launchOptions.executablePath = baseDir + 'chrome';
+        }
     }
 
     const context = await chromium.launchPersistentContext(config.USER_DATA_DIR, launchOptions);

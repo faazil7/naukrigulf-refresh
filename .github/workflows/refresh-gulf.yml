@@ -24,8 +24,8 @@ jobs:
 
       - name: Install Playwright Chromium & System Dependencies
         run: |
-          npx playwright install --with-deps chromium
-          # Ensure the binary path is accessible and consistent
+          npm install -g playwright
+          playwright install --with-deps chromium
           ls -R /home/runner/.cache/ms-playwright/
         shell: bash
 

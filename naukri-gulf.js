@@ -151,11 +151,24 @@ async function refreshProfile(options = {}) {
 
       // Try locating the edit button by specifically matching elements near "CV Headline"
       let editBtn = null;
+      
+      const candidateSections = await page.locator('div, section, .card').all();
+      for (const sec of candidateSections) {
+        const text = await sec.innerText().catch(() => '');
+        if (/cv headline/i.test(text) && text.length < 800 && !text.includes('HOME')) {
+          const btn = await sec.locator('span, a, button, [class*="edit"]').filter({ hasText: /edit/i }).first();
+          if (await btn.count() > 0 && await btn.isVisible().catch(() => false)) {
+            editBtn = btn;
+            console.log('Found visible edit button in CV Headline section.');
+            break;
+          }
+        }
+      }
 
       // Attempt 2: If not found, look for edit icon specifically inside sections containing CV Headline
       if (!editBtn || await editBtn.count() === 0) {
         console.log('Attempting selector-based edit button search for CV Headline...');
-        editBtn = await page.locator('div:has-text("CV Headline") [class*="edit"], div:has-text("CV Headline") a:has-text("Edit"), div:has-text("CV Headline") span:has-text("Edit")').first();
+        editBtn = await page.locator('div:has-text("CV Headline") [class*="edit"], div:has-text("CV Headline") a:has-text("Edit"), div:has-text("CV Headline") span:has-text("Edit")').filter({ hasNot: page.locator('label') }).first();
       }
 
       if (editBtn && await editBtn.count() > 0) {

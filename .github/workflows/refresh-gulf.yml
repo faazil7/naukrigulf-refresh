@@ -34,4 +34,5 @@ jobs:
           NAUKRI_EMAIL: ${{ secrets.NAUKRI_EMAIL }}
           NAUKRI_PASSWORD: ${{ secrets.NAUKRI_PASSWORD }}
           HEADLESS: 'true'
+          PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: /home/runner/.cache/ms-playwright/chromium-1255/chrome-linux/chrome
         run: node index-gulf.js refresh

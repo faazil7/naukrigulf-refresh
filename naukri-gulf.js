@@ -15,7 +15,8 @@ async function launchBrowser(options = {}) {
         headless: isHeadless,
         viewport: { width: 1280, height: 800 },
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        args: ['--disable-blink-features=AutomationControlled', '--no-sandbox', '--disable-http2', '--ignore-certificate-errors']
+        args: ['--disable-blink-features=AutomationControlled', '--no-sandbox', '--disable-http2', '--ignore-certificate-errors'],
+        executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined
     };
     
     // In GitHub Actions, explicitly define executable path if standard detection fails

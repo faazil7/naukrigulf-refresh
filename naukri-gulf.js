@@ -131,6 +131,8 @@ async function refreshProfile(options = {}) {
             console.log('SUCCESS: Naukri Gulf CV Headline updated and saved successfully!');
           }
         }
+      } else {
+        console.log('WARNING: Could not find "Edit" button inside the CV Headline section.');
       }
     } catch (err) {
       console.log('Profile refresh interaction error:', err.message);

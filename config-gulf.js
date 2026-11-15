@@ -10,6 +10,6 @@ module.exports = {
   USER_DATA_DIR,
   EMAIL: process.env.NAUKRI_EMAIL || '',
   PASSWORD: process.env.NAUKRI_PASSWORD || '',
-  REFRESH_INTERVAL_MINUTES: parseInt(process.env.REFRESH_INTERVAL_MINUTES || '120', 10),
+  REFRESH_INTERVAL_MINUTES: parseInt(process.env.REFRESH_INTERVAL_MINUTES || '60', 10),
   HEADLESS: process.env.HEADLESS !== 'false',
 };

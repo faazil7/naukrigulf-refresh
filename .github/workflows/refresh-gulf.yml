@@ -2,8 +2,10 @@ name: Naukri Gulf Profile Auto-Refresh
 
 on:
   schedule:
-    # Runs every 2 hours
-    - cron: '0 */2 * * *'
+    # Runs every hour, skipping 12:00 AM to 7:00 AM IST.
+    # IST is UTC+5:30. 12:00 AM IST = 18:30 UTC (previous day). 7:00 AM IST = 01:30 UTC.
+    # Therefore, we run between 01:30 UTC and 18:30 UTC (i.e. hours 2 to 18 UTC covers 7:30 AM to 12:00 AM IST).
+    - cron: '0 2-18 * * *'
   workflow_dispatch:
 
 jobs:

@@ -101,10 +101,6 @@ async function refreshProfile(options = {}) {
     let refreshed = false;
     try {
       // Target the CV headline section more flexibly
-    // DEBUG: Dump the full page HTML to see what's actually loading
-    const fullHtml = await page.content();
-    console.log('DEBUG: Full Page HTML snippet:', fullHtml.substring(0, 500));
-
     let refreshed = false;
     try {
       console.log('Searching for CV Headline container...');
